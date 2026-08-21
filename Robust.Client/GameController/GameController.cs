@@ -786,7 +786,16 @@ namespace Robust.Client
             if (_mainLoop == null)
                 return;
 
-            if (vsync || maxFps == 0)
+            if (vsync)
+            {
+                // Mini/Windows: OpenGL swap-interval + DwmFlush frequently fail to hard-cap FPS
+                // (VRR / broken WGL vsync → 200+ FPS with display.vsync still true). Keep GPU
+                // vsync enabled, but also soft-limit the game loop to refresh rate (or max_fps).
+                var limitFps = maxFps > 0 ? maxFps : GetPrimaryMonitorRefreshRate();
+                _mainLoop.SleepMode = SleepMode.Limit;
+                _mainLoop.LimitMinFrameTime = TimeSpan.FromSeconds(1.0 / Math.Max(limitFps, 30));
+            }
+            else if (maxFps == 0)
             {
                 _mainLoop.SleepMode = SleepMode.None;
             }
@@ -795,6 +804,24 @@ namespace Robust.Client
                 _mainLoop.SleepMode = SleepMode.Limit;
                 _mainLoop.LimitMinFrameTime = TimeSpan.FromSeconds(1.0 / maxFps);
             }
+        }
+
+        private int GetPrimaryMonitorRefreshRate()
+        {
+            try
+            {
+                foreach (var monitor in _clyde.EnumerateMonitors())
+                {
+                    if (monitor.RefreshRate > 0)
+                        return monitor.RefreshRate;
+                }
+            }
+            catch
+            {
+                // Monitors may not be ready yet during early init.
+            }
+
+            return 60;
         }
 
         internal enum DisplayMode : byte
