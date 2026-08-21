@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Robust.Shared.IoC;
 using Robust.Shared.Prototypes;
@@ -11,7 +12,7 @@ using Robust.Shared.Serialization.TypeSerializers.Implementations.Generic;
 namespace Robust.Shared.Serialization.TypeSerializers.Implementations.Custom.Prototype.Array;
 
 // TODO: make AbstractProtoId and change every prototype to use it...
-public sealed class AbstractPrototypeIdArraySerializer<TPrototype> : ITypeValidator<string[], SequenceDataNode>,
+public class AbstractPrototypeIdArraySerializer<TPrototype> : ITypeValidator<string[], SequenceDataNode>,
     ITypeValidator<string[], ValueDataNode> where TPrototype : class, IPrototype, IInheritingPrototype
 {
     public ValidationNode Validate(ISerializationManager serializationManager, SequenceDataNode node,
@@ -28,3 +29,11 @@ public sealed class AbstractPrototypeIdArraySerializer<TPrototype> : ITypeValida
         => ProtoIdSerializer<TPrototype>.Validate(dependencies, node);
 }
 
+/// <summary>
+/// Compatibility alias for content that still references the pre-288 name.
+/// </summary>
+[Obsolete("Use AbstractPrototypeIdArraySerializer<TPrototype>")]
+public sealed class PrototypeIdArraySerializer<TPrototype> : AbstractPrototypeIdArraySerializer<TPrototype>
+    where TPrototype : class, IPrototype, IInheritingPrototype
+{
+}
