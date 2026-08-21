@@ -37,8 +37,11 @@ internal partial class UserInterfaceManager
         {
             if (_windowsToRoot.TryGetValue(args.Window.Id, out var root))
             {
+                var oldScale = root.UIScaleSet;
                 UpdateUIScale(root);
-                _fontManager.ClearFontCache();
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (root.UIScaleSet != oldScale)
+                    _fontManager.ClearFontCache();
             }
 
         }

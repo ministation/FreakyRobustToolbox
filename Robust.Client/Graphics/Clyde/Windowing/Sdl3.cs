@@ -153,7 +153,9 @@ internal partial class Clyde
 
         public void GLSwapInterval(WindowReg reg, int interval)
         {
-            ((Sdl3WindowReg)reg).SwapInterval = interval;
+            var sdlReg = (Sdl3WindowReg)reg;
+            sdlReg.SwapInterval = interval;
+            sdlReg.DwmFlushOwnsSwapInterval = false;
             SDL.SDL_GL_SetSwapInterval(interval);
         }
 

@@ -221,7 +221,16 @@ internal partial class Clyde
             if (windowReg == null)
                 return;
 
-            windowReg.WindowScale = new Vector2(ev.Scale, ev.Scale);
+            // SDL can emit 0 or spam identical scale events around compositor/vsync quirks.
+            if (ev.Scale <= 0f)
+                return;
+
+            var newScale = new Vector2(ev.Scale, ev.Scale);
+            // ReSharper disable once CompareOfFloatsByEqualityOperator
+            if (windowReg.WindowScale.X == newScale.X && windowReg.WindowScale.Y == newScale.Y)
+                return;
+
+            windowReg.WindowScale = newScale;
             _clyde.SendWindowContentScaleChanged(new WindowContentScaleEventArgs(windowReg.Handle));
         }
 

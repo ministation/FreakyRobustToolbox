@@ -517,9 +517,10 @@ internal partial class Clyde
             var dwmFlush = false;
             var swapInterval = 0;
 
-            // Mini: also DwmFlush in "fullscreen" — on Win10+ exclusive FS still often fails to
-            // honor GL swap interval, and borderless/fullscreen flags are easy to get wrong.
-            if (reg.SwapInterval > 0)
+            // Windowed only: fullscreen + per-frame SetSwapInterval(0↔N) thrashes Windows DPI
+            // cursor/UI scale (visible as oscillating cursor size in lobby). Soft FPS limit in
+            // GameController covers uncapped FPS when GL vsync fails in fullscreen.
+            if (!reg.Fullscreen && reg.SwapInterval > 0)
             {
                 BOOL compositing;
                 // 6.2 is Windows 8
@@ -533,10 +534,22 @@ internal partial class Clyde
                     if (curCtx != reg.GlContext || curWin != reg.Sdl3Window)
                         throw new InvalidOperationException("Window context must be current!");
 
-                    SDL.SDL_GL_SetSwapInterval(0);
+                    // Leave GL swap interval at 0 for the whole DwmFlush session — do NOT restore
+                    // every frame (that DPI/compositor thrash shrinks/grows the OS cursor).
+                    if (!reg.DwmFlushOwnsSwapInterval)
+                    {
+                        SDL.SDL_GL_SetSwapInterval(0);
+                        reg.DwmFlushOwnsSwapInterval = true;
+                    }
+
                     dwmFlush = true;
                     swapInterval = reg.SwapInterval;
                 }
+            }
+            else if (reg.DwmFlushOwnsSwapInterval)
+            {
+                SDL.SDL_GL_SetSwapInterval(reg.SwapInterval);
+                reg.DwmFlushOwnsSwapInterval = false;
             }
 #endif
 
@@ -551,8 +564,6 @@ internal partial class Clyde
                 {
                     Windows.DwmFlush();
                 }
-
-                SDL.SDL_GL_SetSwapInterval(swapInterval);
             }
 #endif
         }
@@ -693,6 +704,12 @@ internal partial class Clyde
             public bool Fullscreen;
 #pragma warning restore CS0649
             public int SwapInterval;
+
+            /// <summary>
+            /// True while DwmFlush path owns GL swap interval (forced to 0). Avoids per-frame
+            /// SetSwapInterval thrash that flaps Windows DPI cursor size.
+            /// </summary>
+            public bool DwmFlushOwnsSwapInterval;
 
             // Kept around to avoid it being GCd.
             public CursorImpl? Cursor;
