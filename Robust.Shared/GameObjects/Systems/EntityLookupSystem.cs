@@ -10,6 +10,7 @@ using Robust.Shared.Maths;
 using Robust.Shared.Network;
 using Robust.Shared.Physics;
 using Robust.Shared.Physics.Collision;
+using Robust.Shared.Physics.Collision.Shapes;
 using Robust.Shared.Physics.Components;
 using Robust.Shared.Physics.Dynamics;
 using Robust.Shared.Physics.Events;
@@ -1080,6 +1081,11 @@ public sealed partial class EntityLookupSystem : EntitySystem
             // TODO cache this to speed up entity lookups & tree updating
             foreach (var fixture in fixtures.Fixtures.Values)
             {
+                // Degenerate / not-yet-initialized shapes (e.g. empty PolygonShape after a failed
+                // AABB→hull conversion) report ChildCount > 0 but throw in ComputeAABB.
+                if (fixture.Shape is PolygonShape { VertexCount: 0 })
+                    continue;
+
                 for (var i = 0; i < fixture.Shape.ChildCount; i++)
                 {
                     // TODO don't transform each fixture, just transform the final AABB

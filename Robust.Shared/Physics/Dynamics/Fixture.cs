@@ -122,8 +122,10 @@ namespace Robust.Shared.Physics.Dynamics
                 verts[1] = bounds.BottomRight;
                 verts[2] = bounds.TopRight;
                 verts[3] = bounds.TopLeft;
-                poly.Set(verts, 4);
-                Shape = poly;
+                // Degenerate AABBs fail ComputeHull; keep the AABB instead of an empty polygon
+                // (empty PolygonShape.ChildCount is still 1 and ComputeAABB IndexOutOfRanges).
+                if (poly.Set(verts, 4))
+                    Shape = poly;
             }
         }
 

@@ -314,6 +314,9 @@ namespace Robust.Shared.Physics.Collision.Shapes
         public Box2 ComputeAABB(Transform transform, int childIndex)
         {
             DebugTools.Assert(childIndex == 0);
+            if (VertexCount == 0)
+                return new Box2(transform.Position, transform.Position);
+
             var lower = Transform.Mul(transform, Vertices[0]);
             var upper = lower;
 
