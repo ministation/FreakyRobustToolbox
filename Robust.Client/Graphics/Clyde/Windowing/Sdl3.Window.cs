@@ -528,7 +528,9 @@ internal partial class Clyde
             var dwmFlush = false;
             var swapInterval = 0;
 
-            if (!reg.Fullscreen && reg.SwapInterval > 0)
+            // Mini: also DwmFlush in "fullscreen" — on Win10+ exclusive FS still often fails to
+            // honor GL swap interval, and borderless/fullscreen flags are easy to get wrong.
+            if (reg.SwapInterval > 0)
             {
                 BOOL compositing;
                 // 6.2 is Windows 8
