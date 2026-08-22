@@ -384,6 +384,9 @@ public sealed partial class EntityLookupSystem
                     if (!sensors && !fixture.Hard)
                         continue;
 
+                    if (fixture.Shape.ShapeType <= ShapeType.Unknown)
+                        continue;
+
                     anyFixture = true;
                     for (var i = 0; i < fixture.Shape.ChildCount; i++)
                     {
