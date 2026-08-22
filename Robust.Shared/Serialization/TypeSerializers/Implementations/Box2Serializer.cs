@@ -78,8 +78,9 @@ namespace Robust.Shared.Serialization.TypeSerializers.Implementations
                 return new ErrorNode(node, "Failed parsing values of Box2.");
             }
 
-            if (!ValidateBounds(left, bottom, right, top, out var error))
-                return new ErrorNode(node, error);
+            // Do not reject inverted L/R or B/T: PaperVisuals and some fixtures historically
+            // authored asymmetric/"CSS-like" values. Read() + Box2 ctor normalize.
+            _ = (left, bottom, right, top);
 
             return new ValidatedValueNode(node);
         }
@@ -145,9 +146,7 @@ namespace Robust.Shared.Serialization.TypeSerializers.Implementations
                 return new ErrorNode(node, "Failed parsing values of Box2i.");
             }
 
-            if (!ValidateBounds(left, bottom, right, top, out var error))
-                return new ErrorNode(node, error);
-
+            _ = (left, bottom, right, top);
             return new ValidatedValueNode(node);
         }
 

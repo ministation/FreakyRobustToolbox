@@ -1,7 +1,8 @@
-using Robust.Shared.ComponentTrees;
+﻿using Robust.Shared.ComponentTrees;
 using Robust.Shared.GameStates;
 using Robust.Shared.Maths;
 using Robust.Shared.Physics;
+using Robust.Shared.Serialization;
 using Robust.Shared.Serialization.TypeSerializers.Implementations.Custom;
 using Robust.Shared.Serialization.Manager.Attributes;
 using Robust.Shared.ViewVariables;
@@ -14,7 +15,7 @@ namespace Robust.Shared.GameObjects;
 [NetworkedComponent()]
 [AutoGenerateComponentState(true)]
 [Access(typeof(OccluderSystem), Other = AccessPermissions.ReadExecute)]
-public sealed partial class OccluderComponent : Component, IComponentTreeEntry<OccluderComponent>
+public sealed partial class OccluderComponent : Component, IComponentTreeEntry<OccluderComponent>, ISerializationHooks
 {
     [DataField, AutoNetworkedField]
     public bool Enabled = true;
@@ -31,6 +32,12 @@ public sealed partial class OccluderComponent : Component, IComponentTreeEntry<O
         new(-0.5f, -0.5f),
     ];
 
+    /// <summary>
+    /// Pre-RT288 AABB form still present on some saved maps. Converted to polygon.
+    /// </summary>
+    [DataField("boundingBox")]
+    private Box2? _legacyBoundingBox;
+
     public ReadOnlySpan<Vector2> Polygon => _polygon;
 
     internal Vector2[] PolygonArray
@@ -39,11 +46,8 @@ public sealed partial class OccluderComponent : Component, IComponentTreeEntry<O
         set => _polygon = value;
     }
 
-    /// <summary>
-    /// Cached local-space bounds for <see cref="Polygon"/>.
-    /// </summary>
     [ViewVariables]
-    public Box2 LocalBounds { get; internal set; } = Box2.Empty; // Leave as empty so we remember to always update the cache on init.
+    public Box2 LocalBounds { get; internal set; } = Box2.Empty;
 
     public EntityUid? TreeUid { get; set; }
     public DynamicTree<ComponentTreeEntry<OccluderComponent>>? Tree { get; set; }
@@ -51,16 +55,28 @@ public sealed partial class OccluderComponent : Component, IComponentTreeEntry<O
     public bool AddToTree => Enabled;
     public bool TreeUpdateQueued { get; set; } = false;
 
-    /// <summary>
-    /// Cached client-side shared-edge mask. Bit <c>i</c> is set when polygon render edge <c>i</c> is exactly shared
-    /// with another enabled occluder edge.
-    /// </summary>
     [ViewVariables]
     public byte OccludingEdges;
 
-    /// <summary>
-    /// Last tree-local bounds used to dirty neighbours when this occluder moves, changes polygon, or is removed.
-    /// </summary>
     [ViewVariables]
     public (EntityUid TreeUid, Box2 Bounds)? LastTreeBounds;
+
+    void ISerializationHooks.AfterDeserialization()
+    {
+        if (_legacyBoundingBox is not { } box)
+            return;
+
+        var left = MathF.Min(box.Left, box.Right);
+        var right = MathF.Max(box.Left, box.Right);
+        var bottom = MathF.Min(box.Bottom, box.Top);
+        var top = MathF.Max(box.Bottom, box.Top);
+        _polygon =
+        [
+            new(left, top),
+            new(right, top),
+            new(right, bottom),
+            new(left, bottom),
+        ];
+        _legacyBoundingBox = null;
+    }
 }
