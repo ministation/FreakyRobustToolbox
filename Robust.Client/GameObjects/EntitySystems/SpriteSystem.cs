@@ -118,7 +118,8 @@ namespace Robust.Client.GameObjects
                     postShader.InsertionIndex = i;
                     if (postShader.Shader != null)
                     {
-                        Log.Warning("Post-shader '{0}' already has a shader instance during component initialization.", postShader.Id);
+                        // YAML / legacy PostShader may already provide an instance; instantiate is skipped.
+                        Log.Debug("Post-shader '{0}' already has a shader instance during component initialization.", postShader.Id);
                         continue;
                     }
 
