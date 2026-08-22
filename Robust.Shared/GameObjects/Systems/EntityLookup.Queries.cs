@@ -167,6 +167,10 @@ public sealed partial class EntityLookupSystem
 
             if (!approx)
             {
+                // PhysShapeAabb / unfinished shapes report Unknown and blow up DistanceProxy.
+                if (value.Fixture.Shape.ShapeType <= ShapeType.Unknown)
+                    return true;
+
                 var intersectingTransform = state.Physics.GetLocalPhysicsTransform(value.Entity);
                 if (!state.Manifolds.TestOverlap(state.Shape, 0, value.Fixture.Shape, value.ChildIndex, state.Transform, intersectingTransform))
                 {
@@ -198,6 +202,9 @@ public sealed partial class EntityLookupSystem
                 foreach (var fixture in fixtures.Fixtures.Values)
                 {
                     if (!sensors && !fixture.Hard)
+                        continue;
+
+                    if (fixture.Shape.ShapeType <= ShapeType.Unknown)
                         continue;
 
                     anyFixture = true;
@@ -338,6 +345,9 @@ public sealed partial class EntityLookupSystem
 
             if (!approx)
             {
+                if (value.Fixture.Shape.ShapeType <= ShapeType.Unknown)
+                    return true;
+
                 var intersectingTransform = state.Physics.GetLocalPhysicsTransform(value.Entity);
                 if (!state.Manifolds.TestOverlap(state.Shape, 0, value.Fixture.Shape, value.ChildIndex, state.Transform, intersectingTransform))
                 {

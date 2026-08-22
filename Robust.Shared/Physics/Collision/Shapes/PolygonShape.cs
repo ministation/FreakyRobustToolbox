@@ -333,20 +333,39 @@ namespace Robust.Shared.Physics.Collision.Shapes
 
         public static explicit operator PolygonShape(PhysShapeAabb aabb)
         {
-            // TODO: Need a test for this probably, if there is no AABB manifold generator done at least.
+            return FromAabb(aabb);
+        }
+
+        /// <summary>
+        /// Converts an AABB into a polygon without going through <see cref="Set"/> / ComputeHull,
+        /// which fails for near-zero boxes and would leave an empty (broken) polygon.
+        /// </summary>
+        public static PolygonShape FromAabb(PhysShapeAabb aabb)
+        {
             var bounds = aabb.LocalBounds;
+
+            // Point / line AABBs weld down to &lt; 3 unique verts under LinearSlop; inflate them.
+            const float minSize = PhysicsConstants.LinearSlop * 4f;
+            if (bounds.Width < minSize || bounds.Height < minSize)
+            {
+                var center = bounds.Center;
+                var half = new Vector2(
+                    MathF.Max(bounds.Width, minSize) * 0.5f,
+                    MathF.Max(bounds.Height, minSize) * 0.5f);
+                bounds = new Box2(center - half, center + half);
+            }
 
             // Don't use setter as we already know the winding.
             return new PolygonShape(aabb.Radius)
             {
-                Vertices = new []
+                Vertices = new[]
                 {
                     bounds.BottomLeft,
                     bounds.BottomRight,
                     bounds.TopRight,
                     bounds.TopLeft,
                 },
-                Normals = new []
+                Normals = new[]
                 {
                     new Vector2(0f, -1f),
                     new Vector2(1f, 0f),

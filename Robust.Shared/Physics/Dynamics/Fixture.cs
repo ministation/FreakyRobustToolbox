@@ -115,17 +115,14 @@ namespace Robust.Shared.Physics.Dynamics
             // You'll also need a dedicated solver for circles (and ideally AABBs) as otherwise it'll be laggier casting to PolygonShape.
             if (Shape is PhysShapeAabb aabb)
             {
-                var bounds = aabb.LocalBounds;
-                var poly = new PolygonShape();
-                Span<Vector2> verts = stackalloc Vector2[4];
-                verts[0] = bounds.BottomLeft;
-                verts[1] = bounds.BottomRight;
-                verts[2] = bounds.TopRight;
-                verts[3] = bounds.TopLeft;
-                // Degenerate AABBs fail ComputeHull; keep the AABB instead of an empty polygon
-                // (empty PolygonShape.ChildCount is still 1 and ComputeAABB IndexOutOfRanges).
-                if (poly.Set(verts, 4))
-                    Shape = poly;
+                // Never leave PhysShapeAabb on the fixture: ShapeType.Unknown breaks contact
+                // creation (_registers[-1,...]) and DistanceProxy. Degenerate AABBs also fail
+                // ComputeHull via Set(), which used to leave an empty PolygonShape.
+                Shape = PolygonShape.FromAabb(aabb);
+            }
+            else if (Shape is PolygonShape { VertexCount: 0 })
+            {
+                Shape = PolygonShape.FromAabb(new PhysShapeAabb());
             }
         }
 

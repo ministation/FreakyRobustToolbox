@@ -274,6 +274,13 @@ public abstract partial class SharedPhysicsSystem
         if (!ShouldCollideSlow(entA.Owner, entB.Owner, bodyA, bodyB, fixtureA, fixtureB, xformA, xformB))
             return;
 
+        // PhysShapeAabb reports ShapeType.Unknown; indexing _registers[-1, ...] IndexOutOfRanges.
+        var typeA = fixtureA.Shape.ShapeType;
+        var typeB = fixtureB.Shape.ShapeType;
+        if (typeA <= ShapeType.Unknown || typeA >= ShapeType.TypeCount ||
+            typeB <= ShapeType.Unknown || typeB >= ShapeType.TypeCount)
+            return;
+
         // Call the factory.
         var contact = CreateContact((entA.Owner, entA.Comp1, entA.Comp2), (entB.Owner, entB.Comp1, entB.Comp2), fixtureAId, fixtureBId, fixtureA, indexA, fixtureB, indexB);
         contact.Flags = flags;
